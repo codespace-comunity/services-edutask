@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
@@ -101,6 +102,14 @@ func New(
 		})
 
 		if err != nil {
+			if err == pgx.ErrNoRows {
+				c.JSON(http.StatusBadRequest, gin.H{
+					"message": "invalid request body",
+					"code": http.StatusBadRequest,
+					"error": err.Error(),
+				})
+				return
+			}
 			// if pgErr, ok := err.(*pgconn.PgError); ok {
 			// 	if pgErr.Code == "23505" {
 			// 		log.Printf("user already exist: %v", err)

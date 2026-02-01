@@ -14,22 +14,20 @@ func (c *controller) RefreshToken(ctx context.Context, request *RequestRefreshTo
 		return nil, err
 	}
 
-	if claims.Issuer != "codespace" {
+	if claims.Type != "refresh_token" {
 		return nil, errors.New("invalid token")
 	}
 
-	result := c.rdb.Get(ctx, claims.Subject)
-	if result.Err() != nil {
-		return nil, err
-	}
-
-	token := result.String()
-
-	if token != request.RefreshToken {
+	storedToken, err := c.rdb.Get(ctx, claims.Subject).Result()
+	if err != nil {
 		return nil, errors.New("invalid token")
 	}
 
-	accessToken, err := utils.GenerateJWT(claims.Subject, 15 * time.Minute)
+	if storedToken != request.RefreshToken {
+		return nil, errors.New("invalid token")
+	}
+
+	accessToken, err := utils.GenerateJWT(claims.Subject, "access_token", 15 * time.Minute)
 	if err != nil {
 		log.Printf("failed to generate access token, arguments: %v", err)
 		return nil, err

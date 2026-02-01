@@ -9,3 +9,7 @@ func HashString(plain string) (string, error) {
 	}
 	return string(hash), nil
 }
+
+func CompareStringWithHash(plain, hash string) bool {
+	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(plain)) == nil
+}

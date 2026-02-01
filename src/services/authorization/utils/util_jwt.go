@@ -6,16 +6,21 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
-func GenerateJWT(userID string, expired time.Duration) (string, error) {
+func GenerateJWT(userID, tokenType string, expired time.Duration) (string, error) {
 
-	claims:=  jwt.RegisteredClaims{
+	claims :=  CustomClaims{
+		Type: tokenType,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ID: uuid.NewString(),
 			Issuer: "codespace",
 			Subject: userID,
 			IssuedAt: jwt.NewNumericDate(time.Now()),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(expired)),
-		}
+		},
+	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(os.Getenv("SECRET")))
@@ -27,29 +32,50 @@ var (
 	ErrTokenMalformed = errors.New("token malformed")
 )
 
-func ValidateJWT(tokenString string) (*jwt.RegisteredClaims, error) {
+func ValidateJWT(tokenString string) (*CustomClaims, error) {
 	token, err := jwt.ParseWithClaims(
 		tokenString,
-		&jwt.RegisteredClaims{},
+		&CustomClaims{},
 		func(token *jwt.Token) (interface{}, error) {
+			// validate signing method
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, ErrTokenInvalid
+			}
 			return []byte(os.Getenv("SECRET")), nil
 		},
+		jwt.WithIssuer("codespace"),
+		jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Name}),
 	)
 
 	if err != nil {
-		if errors.Is(err, jwt.ErrTokenExpired) {
+		switch {
+		case errors.Is(err, jwt.ErrTokenExpired):
 			return nil, ErrTokenExpired
-		}
-		if errors.Is(err, jwt.ErrTokenMalformed) {
+		case errors.Is(err, jwt.ErrTokenMalformed):
 			return nil, ErrTokenMalformed
+		default:
+			return nil, ErrTokenInvalid
 		}
-		return nil, ErrTokenInvalid
 	}
 
-	claims, ok := token.Claims.(*jwt.RegisteredClaims)
+	claims, ok := token.Claims.(*CustomClaims)
 	if !ok || !token.Valid {
 		return nil, ErrTokenInvalid
 	}
 
+	// VALIDASI MANUAL TAMBAHAN (tanpa cek Type)
+	if claims.Subject == "" {
+		return nil, ErrTokenInvalid
+	}
+
+	if claims.IssuedAt == nil || claims.ExpiresAt == nil {
+		return nil, ErrTokenInvalid
+	}
+
+	if claims.ExpiresAt.Time.Before(time.Now()) {
+		return nil, ErrTokenExpired
+	}
+
 	return claims, nil
 }
+

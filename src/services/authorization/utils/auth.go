@@ -11,7 +11,7 @@ func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		auth := c.GetHeader("Authorization")
 		if auth == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"message": "invalid token",
 				"code": http.StatusUnauthorized,
 				"error": "authorization invalid",
@@ -21,7 +21,7 @@ func AuthMiddleware() gin.HandlerFunc {
 
 		parts := strings.Split(auth, " ")
 		if len(parts) != 2 || parts[0] != "Bearer" {
-			c.JSON(http.StatusUnauthorized, gin.H{
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"message": "invalid token",
 				"code": http.StatusUnauthorized,
 				"error": "authorization invalid",
@@ -33,7 +33,7 @@ func AuthMiddleware() gin.HandlerFunc {
 
 		claims, err := ValidateJWT(token)
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"message": "invalid token",
 				"code": http.StatusUnauthorized,
 				"error": "jwt not valid",
@@ -41,8 +41,8 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		if claims.Issuer != "codespace" {
-			c.JSON(http.StatusUnauthorized, gin.H{
+		if claims.Type != "access_token" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"message": "invalid token",
 				"code": http.StatusUnauthorized,
 				"error": "jwt not valid",
