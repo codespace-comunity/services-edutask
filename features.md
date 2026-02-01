@@ -5,7 +5,7 @@
 - login
 - google-oauth (opsional)
 - register
-- forget-password
+- forget-password (opsional)
 - refresh-token
 - logout
 
@@ -22,7 +22,7 @@
 - get-list
 - create
 - join-class
-- update-class
+- updte-classa
 - delete
 - leave
 
