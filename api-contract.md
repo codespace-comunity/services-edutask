@@ -91,6 +91,11 @@ description:
     Endpoint ini digunakan ketika user lupa password akun nya.
     Client hit api ini, lalu service kirim code, dan tunggu redirect dari user atau client.
 auth: none
+request:
+    body:
+    {
+        "email": string
+    }
 response:
     success (code: 201):
     {
@@ -151,11 +156,6 @@ description:
     Access token akan otomatis kedaluwarsa sesuai TTL.
     Dan update status is_active dalam database menjadi false.
 auth: bearer
-request:
-    body:
-    {
-        "refresh_token": string
-    }
 response:
     success (code: 200):
     {
